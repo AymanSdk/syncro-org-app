@@ -28,6 +28,16 @@ import { useWorkspaceId } from '@/hooks/use-workspace-id';
 import { toast } from 'sonner';
 import { useConfirm } from '@/hooks/use-confirm';
 import { useRouter } from 'next/navigation';
+import { SimpleModal } from '@/components/SimpleModal';
+import { UserProfileContent } from '@/components/UserProfileContent';
+import { useState } from 'react';
+import { 
+  fetchUserProfile, 
+  updateUserProfile, 
+  updateUserSecurity,
+  uploadProfileImage,
+  ProfileUpdateData
+} from '@/services/profile-service';
 
 interface ProfileProps {
   memberId: Id<'members'>;
@@ -63,6 +73,45 @@ export const Profile = ({ memberId, onClose }: ProfileProps) => {
     useUpdateMember();
   const { mutate: removeMember, isPending: isRemovingMember } =
     useRemoveMember();
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleOpenModal = () => setIsModalOpen(true);
+  const handleCloseModal = () => setIsModalOpen(false);
+
+  // Define handlers for UserProfileContent
+  const handleSaveProfile = async (data: ProfileUpdateData) => {
+    try {
+      await updateUserProfile(member.user._id, data);
+      return true;
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Failed to update profile');
+      return false;
+    }
+  };
+
+  const handleUpdateSecurity = async (securityData: { mfaEnabled: boolean }) => {
+    try {
+      await updateUserSecurity(member.user._id, securityData);
+      return true;
+    } catch (error) {
+      console.error('Error updating security settings:', error);
+      toast.error('Failed to update security settings');
+      return false;
+    }
+  };
+
+  const handleUploadImage = async (imageFile: File | Blob | string) => {
+    try {
+      const imageUrl = await uploadProfileImage(imageFile);
+      return imageUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.error('Failed to upload image');
+      throw error;
+    }
+  };
 
   const onRemove = async () => {
     const ok = await confirmRemove();
@@ -164,6 +213,30 @@ export const Profile = ({ memberId, onClose }: ProfileProps) => {
       <RemoveDialog />
       <LeaveDialog />
       <UpdateDialog />
+      <SimpleModal 
+        isOpen={isModalOpen} 
+        onClose={handleCloseModal}
+        title="User Profile"
+        maxWidth="max-w-6xl" // Make it slightly wider for better layout
+      >
+        <UserProfileContent
+          user={{
+            name: member.user.name || '',
+            status: 'Active',
+            jobTitle: member.user.jobTitle || 'Software Engineer',
+            department: member.user.department || 'Engineering',
+            email: member.user.email || '',
+            phone: member.user.phone || '',
+            bio: member.user.bio || '',
+            image: member.user.imageUrl || '',
+            location: member.user.location || '',
+          }}
+          onClose={handleCloseModal}
+          onSave={handleSaveProfile}
+          onUpdateSecurity={handleUpdateSecurity}
+          onUploadImage={handleUploadImage}
+        />
+      </SimpleModal>
       <div className="flex h-full flex-col">
         <div className="flex h-[49px] items-center justify-between border-b px-4">
           <p className="text-lg font-bold">Profile</p>
@@ -181,6 +254,9 @@ export const Profile = ({ memberId, onClose }: ProfileProps) => {
         </div>
         <div className="flex flex-col p-4">
           <p className="text-xl font-bold">{member.user.name}</p>
+          <Button onClick={handleOpenModal} variant="outline" className="mt-4">
+            Edit Profile
+          </Button>
           {currentMember?.role === 'admin' && currentMember._id !== memberId ? (
             <div className="mt-4 flex items-center gap-2">
               <DropdownMenu>
