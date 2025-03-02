@@ -124,7 +124,7 @@ export const UserButton = () => {
         <UserProfileContent
           user={{
             name: data.name,
-            status: 'Active',
+            status: currentStatus.label, // Use the current status label here
             jobTitle: 'Software Engineer',
             department: 'Engineering',
             email: data.email,
@@ -132,6 +132,8 @@ export const UserButton = () => {
             bio: 'A brief biography...',
             image: data.image,
           }}
+          statusColor={currentStatus.color} // Pass status color
+          statusIcon={currentStatus.icon} // Pass status icon
           onClose={handleCloseModal}
         />
       </SimpleModal>

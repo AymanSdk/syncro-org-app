@@ -31,7 +31,8 @@ import {
   CheckIcon,
   XIcon,
   AlertTriangle,
-  Loader
+  Loader,
+  LucideIcon
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -63,16 +64,17 @@ interface UserData {
 
 interface UserProfileContentProps {
   user: {
-    name: string;
-    status: 'Active' | 'Busy';
+    name?: string | null;
+    status: string;
     jobTitle: string;
     department: string;
-    email: string;
+    email?: string | null;
     phone: string;
     bio: string;
-    image: string;
-    location?: string;
+    image?: string | null;
   };
+  statusColor?: string;
+  statusIcon?: LucideIcon;
   onClose: () => void;
   // Optional callbacks for when the server implementation is ready
   onSave?: (userData: any) => Promise<void>;
@@ -91,7 +93,9 @@ const validationSchema: ValidationSchema = {
   phone: /^\+?[0-9\s\-()]{7,}$/,
 };
 
-export const UserProfileContent = ({ user, onClose, onSave, onUpdateSecurity, onUploadImage }: UserProfileContentProps) => {
+export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, onClose, onSave, onUpdateSecurity, onUploadImage }: UserProfileContentProps) {
+  const avatarFallback = user.name ? user.name.charAt(0).toUpperCase() : '?';
+
   // Form state
   const [name, setName] = useState(user.name);
   const [status, setStatus] = useState<'Active' | 'Busy' | 'Offline'>(user.status);
@@ -770,4 +774,4 @@ export const UserProfileContent = ({ user, onClose, onSave, onUpdateSecurity, on
       </form>
     </div>
   );
-};
+}
