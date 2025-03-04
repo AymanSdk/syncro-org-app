@@ -1,6 +1,8 @@
-// This file provides a type-safe interface for user profile operations
+/**
+ * Profile Service
+ * Handles API calls related to user profiles
+ */
 
-// Types for our user profile data
 export interface UserProfile {
   id: string;
   name: string;
@@ -23,109 +25,103 @@ export interface UserProfile {
   }[];
 }
 
-export type ProfileUpdateData = Partial<Omit<UserProfile, 'id' | 'createdAt' | 'activeSessions'>>;
+export interface ProfileUpdateData {
+  name?: string;
+  email?: string;
+  phone?: string;
+  bio?: string;
+  jobTitle?: string;
+  department?: string;
+  location?: string;
+  status?: string;
+  customStatus?: string;
+  mfaEnabled?: boolean;
+  emailNotifications?: boolean;
+  imageUrl?: string | null;
+}
 
-/**
- * Fetch a user's profile data
- */
-export async function fetchUserProfile(userId: string): Promise<UserProfile> {
-  // For now, return mock data
-  // Once Convex is properly integrated, replace with actual API call
-  return {
-    id: userId,
-    name: "John Doe",
-    email: "john@example.com",
-    phone: "+1 555-123-4567",
-    imageUrl: "https://avatars.githubusercontent.com/u/1234567?v=4",
-    bio: "Frontend developer passionate about UI/UX",
-    jobTitle: "Software Engineer",
-    department: "Engineering",
-    location: "San Francisco, CA",
-    status: "Active",
-    mfaEnabled: false,
-    emailNotifications: true,
-    createdAt: Date.now() - 90 * 24 * 60 * 60 * 1000, // 90 days ago
-    activeSessions: [
-      {
-        device: "Chrome on Mac",
-        lastActive: "Active now",
-        isCurrent: true
-      },
-      {
-        device: "Safari on iPhone",
-        lastActive: "2 hours ago",
-        isCurrent: false
-      }
-    ]
-  };
+export interface SecurityUpdateData {
+  mfaEnabled?: boolean;
+  mfaMethod?: 'app' | 'sms' | 'none';
+  passwordLastChanged?: string;
 }
 
 /**
- * Update a user's profile data
+ * Fetch user profile data
+ * @param userId User ID
+ * @returns Promise with user data
  */
-export async function updateUserProfile(
-  userId: string, 
-  data: ProfileUpdateData
-): Promise<UserProfile> {
-  console.log('Updating profile for user', userId, 'with data', data);
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 800));
-  
-  // Return the updated profile (mock)
-  return {
-    id: userId,
-    name: data.name || "John Doe",
-    email: data.email || "john@example.com",
-    phone: data.phone || "+1 555-123-4567",
-    imageUrl: data.imageUrl || "https://avatars.githubusercontent.com/u/1234567?v=4",
-    bio: data.bio || "Frontend developer passionate about UI/UX",
-    jobTitle: data.jobTitle || "Software Engineer",
-    department: data.department || "Engineering",
-    location: data.location || "San Francisco, CA",
-    status: data.status as any || "Active",
-    customStatus: data.customStatus,
-    mfaEnabled: data.mfaEnabled !== undefined ? data.mfaEnabled : false,
-    emailNotifications: data.emailNotifications !== undefined ? data.emailNotifications : true,
-    createdAt: Date.now() - 90 * 24 * 60 * 60 * 1000,
-    activeSessions: [
-      {
-        device: "Chrome on Mac",
-        lastActive: "Active now",
-        isCurrent: true
-      },
-      {
-        device: "Safari on iPhone",
-        lastActive: "2 hours ago",
-        isCurrent: false
-      }
-    ]
-  };
-}
+export const fetchUserProfile = async (userId: string) => {
+  try {
+    // In a real implementation, this would be an API call
+    // For now, simulate a network delay and return mock data
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return {
+      id: userId,
+      name: 'User Name',
+      email: 'user@example.com',
+      // ... other user data
+    };
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    throw new Error('Failed to fetch user profile');
+  }
+};
 
 /**
- * Update a user's security settings
+ * Update user profile data
+ * @param userId User ID
+ * @param profileData Updated profile data
+ * @returns Promise 
  */
-export async function updateUserSecurity(
-  userId: string, 
-  data: { mfaEnabled: boolean }
-): Promise<{ success: boolean }> {
-  console.log('Updating security settings for user', userId, 'with data', data);
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  return { success: true };
-}
+export const updateUserProfile = async (userId: string, profileData: ProfileUpdateData) => {
+  try {
+    // Simulate API call
+    console.log('Updating profile for user:', userId, profileData);
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    return { success: true, message: 'Profile updated successfully' };
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    throw new Error('Failed to update user profile');
+  }
+};
 
 /**
- * Upload a profile image
+ * Update user security settings
+ * @param userId User ID
+ * @param securityData Security settings data
+ * @returns Promise
  */
-export async function uploadProfileImage(
-  file: File | Blob | string
-): Promise<string> {
-  console.log('Uploading profile image');
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // In a real implementation, the server would return the URL of the uploaded image
-  return typeof file === 'string' ? file : 'https://avatars.githubusercontent.com/u/1234567?v=4';
-}
+export const updateUserSecurity = async (userId: string, securityData: SecurityUpdateData) => {
+  try {
+    // Simulate API call
+    console.log('Updating security settings for user:', userId, securityData);
+    await new Promise(resolve => setTimeout(resolve, 600));
+    
+    return { success: true, message: 'Security settings updated successfully' };
+  } catch (error) {
+    console.error('Error updating security settings:', error);
+    throw new Error('Failed to update security settings');
+  }
+};
+
+/**
+ * Upload profile image
+ * @param imageFile File or Blob to upload
+ * @returns Promise with image URL
+ */
+export const uploadProfileImage = async (imageFile: File | Blob | string) => {
+  try {
+    // Simulate file upload
+    console.log('Uploading profile image:', typeof imageFile);
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    
+    // In a real implementation, this would return the URL from the server
+    return 'https://example.com/path/to/image.jpg';
+  } catch (error) {
+    console.error('Error uploading profile image:', error);
+    throw new Error('Failed to upload profile image');
+  }
+};

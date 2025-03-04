@@ -121,6 +121,75 @@ const validationSchema: ValidationSchema = {
   phone: /^\+?[0-9\s\-()]{7,}$/,
 };
 
+import { cva } from "class-variance-authority";
+// Remove headlessui import and use our own transition implementation
+import { useEffect as useLayoutEffect } from 'react';
+
+// Simple fade transition component
+const FadeTransition = ({ 
+  show, 
+  children 
+}: { 
+  show: boolean; 
+  children: React.ReactNode;
+}) => {
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    if (show) {
+      setMounted(true);
+    } else {
+      const timer = setTimeout(() => setMounted(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [show]);
+  
+  if (!mounted) return null;
+  
+  return (
+    <div
+      className={cn(
+        "transition-all duration-300",
+        show ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+      )}
+    >
+      {children}
+    </div>
+  );
+};
+
+// Define variants for cards using cva
+const cardVariants = cva(
+  "p-5 rounded-xl border transition-all duration-200 relative",
+  {
+    variants: {
+      intent: {
+        default: "bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700",
+        primary: "bg-blue-50/50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/40",
+        success: "bg-green-50/50 dark:bg-green-900/20 border-green-200 dark:border-green-800/40",
+        warning: "bg-amber-50/50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/40",
+        danger: "bg-red-50/50 dark:bg-red-900/20 border-red-200 dark:border-red-800/40",
+        info: "bg-violet-50/50 dark:bg-violet-900/20 border-violet-200 dark:border-violet-800/40",
+      },
+      hover: {
+        true: "hover:shadow-md hover:border-opacity-70",
+        false: "",
+      }
+    },
+    defaultVariants: {
+      intent: "default",
+      hover: true,
+    }
+  }
+);
+
+// Define icon containers with consistent styling
+const IconContainer = ({ icon: Icon, color }: { icon: LucideIcon, color: string }) => (
+  <div className={`bg-${color}-50 dark:bg-${color}-900/20 p-2 rounded-md flex items-center justify-center`}>
+    <Icon className={`h-4 w-4 text-${color}-500`} />
+  </div>
+);
+
 export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, onClose, onSave, onUpdateSecurity, onUploadImage }: UserProfileContentProps) {
   const avatarFallback = user.name ? user.name.charAt(0).toUpperCase() : '?';
 
@@ -474,57 +543,106 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
   const MotionDiv = motion.div || "div";
   const MotionButton = motion.button || "button";
 
+  // New effect to set background gradient color on tab change
+  useLayoutEffect(() => {
+    // Change background gradient based on active tab
+    const gradientClasses = {
+      profile: ['from-blue-50', 'to-indigo-50'],
+      preferences: ['from-emerald-50', 'to-teal-50'],
+      security: ['from-amber-50', 'to-orange-50']
+    };
+    
+    const sidebarElement = document.getElementById('profile-sidebar');
+    if (sidebarElement) {
+      // Remove all gradient classes first
+      Object.values(gradientClasses).flat().forEach(cls => {
+        sidebarElement.classList.remove(cls);
+      });
+      
+      // Add the bg-gradient class if not present
+      if (!sidebarElement.classList.contains('bg-gradient-to-b')) {
+        sidebarElement.classList.add('bg-gradient-to-b');
+      }
+      
+      // Add the specific gradient for this tab
+      const activeClasses = gradientClasses[activeTab as keyof typeof gradientClasses] || gradientClasses.profile;
+      activeClasses.forEach(cls => {
+        sidebarElement.classList.add(cls);
+      });
+    }
+  }, [activeTab]);
+
   return (
-    <div className="max-h-[85vh] overflow-hidden border border-gray-100 dark:border-gray-800 rounded-xl shadow-lg">
+    <div className="max-h-[90vh] overflow-hidden border border-gray-100 dark:border-gray-800 rounded-xl shadow-xl bg-white dark:bg-gray-900">
       <Tabs 
         defaultValue="profile" 
         value={activeTab} 
         onValueChange={setActiveTab} 
         className="w-full"
       >
-        <div className="border-b border-gray-100 dark:border-gray-800 px-6 py-3 bg-white dark:bg-gray-900">
+        {/* Header with tabs and unsaved changes indicator */}
+        <div className="border-b border-gray-100 dark:border-gray-800 px-6 py-3 sticky top-0 z-10 backdrop-blur-sm bg-white/90 dark:bg-gray-900/90">
           <div className="flex justify-between items-center">
-            <TabsList className="grid w-auto grid-cols-3 bg-muted/50 rounded-lg p-1">
+            <TabsList className="grid w-auto grid-cols-3 bg-muted/50 rounded-full p-1 border border-gray-100 dark:border-gray-800">
               <TabsTrigger 
                 value="profile" 
-                className="data-[state=active]:bg-white data-[state=active]:text-primary dark:data-[state=active]:bg-gray-800 rounded-md px-6"
+                className="data-[state=active]:bg-white data-[state=active]:text-blue-600 dark:data-[state=active]:bg-gray-800 dark:data-[state=active]:text-blue-400 rounded-full px-6"
               >
+                <Users className="h-4 w-4 mr-2 inline" />
                 Profile
               </TabsTrigger>
               <TabsTrigger 
                 value="preferences" 
-                className="data-[state=active]:bg-white data-[state=active]:text-primary dark:data-[state=active]:bg-gray-800 rounded-md px-6"
+                className="data-[state=active]:bg-white data-[state=active]:text-emerald-600 dark:data-[state=active]:bg-gray-800 dark:data-[state=active]:text-emerald-400 rounded-full px-6"
               >
+                <Settings className="h-4 w-4 mr-2 inline" />
                 Preferences
               </TabsTrigger>
               <TabsTrigger 
                 value="security" 
-                className="data-[state=active]:bg-white data-[state=active]:text-primary dark:data-[state=active]:bg-gray-800 rounded-md px-6"
+                className="data-[state=active]:bg-white data-[state=active]:text-amber-600 dark:data-[state=active]:bg-gray-800 dark:data-[state=active]:text-amber-400 rounded-full px-6"
               >
+                <ShieldCheck className="h-4 w-4 mr-2 inline" />
                 Security
               </TabsTrigger>
             </TabsList>
 
-            {hasUnsavedChanges && (
-              <div className="text-xs text-amber-600 flex items-center bg-amber-50 px-3 py-1.5 rounded-full">
-                <AlertCircle className="h-3 w-3 mr-1" /> Unsaved changes
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              {/* Replace Transition with our own FadeTransition */}
+              {hasUnsavedChanges && (
+                <FadeTransition show={hasUnsavedChanges}>
+                  <div className="text-xs text-amber-600 flex items-center bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200">
+                    <AlertCircle className="h-3 w-3 mr-1" /> Unsaved changes
+                  </div>
+                </FadeTransition>
+              )}
+              
+              <Button 
+                onClick={handleClose} 
+                size="icon" 
+                variant="ghost" 
+                className="rounded-full h-8 w-8"
+              >
+                <XIcon className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </Button>
+            </div>
           </div>
         </div>
         
-        {/* Using the simplified ScrollArea component */}
-        <div className="max-h-[75vh] overflow-auto">
+        {/* Content area with scroll */}
+        <div className="max-h-[80vh] overflow-auto">
           <form ref={formRef} onSubmit={handleSubmit} className="p-0 m-0">
+            {/* Profile Tab */}
             <TabsContent value="profile" className="m-0 p-0">
               <div className="flex flex-col md:flex-row">
                 {/* LEFT SECTION */}
-                <div className="md:w-1/3 bg-[#fafbfc] dark:bg-gray-900 p-8 border-r border-gray-100 dark:border-gray-800">
-                  {/* Profile Image */}
+                <div id="profile-sidebar" className="md:w-1/3 bg-gradient-to-b from-blue-50 to-indigo-50 dark:bg-gray-900 p-8 border-r border-gray-100 dark:border-gray-800">
+                  {/* Profile Image with improved animation */}
                   <div 
                     className={cn(
-                      "relative group w-full rounded-xl transition-colors mb-8",
-                      isDraggingOver ? "bg-blue-50 border-2 border-dashed border-blue-300 p-6" : "p-4"
+                      "relative group w-full rounded-xl transition-all duration-300 mb-8",
+                      isDraggingOver ? "bg-blue-50 border-2 border-dashed border-blue-300 p-6 scale-105 shadow-lg" : "p-4"
                     )}
                     onDragEnter={handleDragEnter}
                     onDragOver={handleDragEnter}
@@ -543,6 +661,7 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
                       <Avatar 
                         className={cn(
                           "size-36 md:size-44 lg:size-48 border-4 border-white dark:border-gray-800 shadow-xl cursor-pointer group-hover:opacity-95 transition-all duration-300 mx-auto",
+                          "hover:shadow-blue-300/50 hover:scale-105 hover:rotate-2 transition-all",
                           isDraggingOver && "opacity-60"
                         )}
                         onClick={() => fileInputRef.current?.click()}
@@ -557,7 +676,7 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
                           {name?.charAt(0) || '?'}
                         </AvatarFallback>
                         
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-full backdrop-blur-sm">
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-all duration-200 rounded-full backdrop-blur-sm">
                           <CameraIcon className="h-8 w-8 text-white" />
                           <span className="text-xs font-medium text-white mt-1">Update photo</span>
                         </div>
@@ -565,8 +684,8 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
                       
                       {previewImage && (
                         <MotionButton
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
+                          initial={{ scale: 0, rotate: -10 }}
+                          animate={{ scale: 1, rotate: 0 }}
                           type="button"
                           onClick={handleRemoveImage}
                           className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition-colors"
@@ -582,14 +701,15 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
                     </p>
                   </div>
                   
-                  {/* User Name */}
+                  {/* User Name - Enhance with better focus animation */}
                   <div className="text-center mb-8">
-                    <div className="relative inline-block max-w-full">
+                    <div className="relative inline-block max-w-full group">
                       <Input 
                         value={name}
                         onChange={(e) => handleFieldChange('name', e.target.value)}
                         className={cn(
                           "text-2xl font-bold text-center border-none bg-transparent focus-visible:ring-blue-500/40 focus-visible:ring-2 focus-visible:ring-offset-0 rounded-lg px-4 py-2",
+                          "transition-all duration-300 group-hover:bg-white/50 dark:group-hover:bg-gray-800/50",
                           !validation.name && "border-red-500"
                         )}
                         placeholder="Your name"
@@ -605,12 +725,12 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
                       )}
                     </div>
                     
-                    {/* Status Badge */}
+                    {/* Status Badge with enhanced animation */}
                     <div className="mt-3 flex justify-center">
                       {!showCustomStatus ? (
                         <Badge 
                           variant={status === 'Active' ? 'success' : status === 'Busy' ? 'warning' : 'default'} 
-                          className="cursor-pointer transition-all duration-300 hover:shadow-md px-4 py-1.5 text-sm rounded-full"
+                          className="cursor-pointer transition-all duration-300 hover:shadow-md px-4 py-1.5 text-sm rounded-full hover:scale-105"
                           onClick={() => {
                             const statusOrder = ['Active', 'Busy', 'Offline'];
                             const currentIndex = statusOrder.indexOf(status);
@@ -655,50 +775,50 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
                   </div>
                   
                   {/* Additional Info Section */}
-                  <Separator className="my-6" />
+                  <Separator className="my-6 bg-gray-200/70 dark:bg-gray-700/70" />
                   
                   <div className="space-y-5">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-blue-50 dark:bg-blue-900/30 p-2 rounded-md">
+                    <div className="flex items-center gap-3 group">
+                      <div className="bg-blue-50 dark:bg-blue-900/30 p-2 rounded-md transition-all group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50">
                         <Sparkles className="h-4 w-4 text-blue-500" />
                       </div>
                       <Input
                         value={jobTitle}
                         onChange={(e) => handleFieldChange('jobTitle', e.target.value)}
-                        className="border-none text-sm p-0 h-auto focus-visible:ring-0 bg-transparent"
+                        className="border-none text-sm p-0 h-auto focus-visible:ring-0 bg-transparent group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
                         placeholder="Add job title"
                       />
                     </div>
                     
-                    <div className="flex items-center gap-3">
-                      <div className="bg-violet-50 dark:bg-violet-900/30 p-2 rounded-md">
+                    <div className="flex items-center gap-3 group">
+                      <div className="bg-violet-50 dark:bg-violet-900/30 p-2 rounded-md transition-all group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50">
                         <Building className="h-4 w-4 text-violet-500" />
                       </div>
                       <Input
                         value={department}
                         onChange={(e) => handleFieldChange('department', e.target.value)}
-                        className="border-none text-sm p-0 h-auto focus-visible:ring-0 bg-transparent"
+                        className="border-none text-sm p-0 h-auto focus-visible:ring-0 bg-transparent group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors"
                         placeholder="Add department"
                       />
                     </div>
                     
-                    <div className="flex items-center gap-3">
-                      <div className="bg-emerald-50 dark:bg-emerald-900/30 p-2 rounded-md">
+                    <div className="flex items-center gap-3 group">
+                      <div className="bg-emerald-50 dark:bg-emerald-900/30 p-2 rounded-md transition-all group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/50">
                         <Globe className="h-4 w-4 text-emerald-500" />
                       </div>
                       <Input
                         value={location}
                         onChange={(e) => handleFieldChange('location', e.target.value)}
-                        className="border-none text-sm p-0 h-auto focus-visible:ring-0 bg-transparent"
+                        className="border-none text-sm p-0 h-auto focus-visible:ring-0 bg-transparent group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors"
                         placeholder="Add location"
                       />
                     </div>
                     
-                    <div className="flex items-center gap-3">
-                      <div className="bg-amber-50 dark:bg-amber-900/30 p-2 rounded-md">
+                    <div className="flex items-center gap-3 group">
+                      <div className="bg-amber-50 dark:bg-amber-900/30 p-2 rounded-md transition-all group-hover:bg-amber-100 dark:group-hover:bg-amber-900/50">
                         <CalendarIcon className="h-4 w-4 text-amber-500" />
                       </div>
-                      <p className="text-sm text-muted-foreground">Member since {joinDate}</p>
+                      <p className="text-sm text-muted-foreground group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Member since {joinDate}</p>
                     </div>
                   </div>
                   
@@ -708,7 +828,7 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="text-sm text-green-600 flex items-center justify-center mb-4 px-3 py-2 bg-green-50 rounded-lg"
+                        className="text-sm text-green-600 flex items-center justify-center mb-4 px-3 py-2 bg-green-50 rounded-lg shadow-sm border border-green-100"
                       >
                         <CheckCircle className="h-4 w-4 mr-2" /> Changes saved successfully
                       </MotionDiv>
@@ -718,13 +838,16 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
                 
                 {/* RIGHT SECTION */}
                 <div className="md:w-2/3 p-8 bg-white dark:bg-gray-950">
-                  <h3 className="text-xl font-semibold mb-6">Personal Information</h3>
+                  <h3 className="text-xl font-semibold mb-6 flex items-center">
+                    <Sparkles className="h-5 w-5 mr-2 text-blue-500" /> 
+                    Personal Information
+                  </h3>
                   
                   {/* Contact Information */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div className="space-y-2">
-                      <label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
-                        <div className="bg-blue-50 dark:bg-blue-900/20 p-1.5 rounded-md">
+                    <div className="space-y-2 group focus-within:ring-2 focus-within:ring-blue-200 focus-within:rounded-lg focus-within:p-2 focus-within:-m-2 transition-all duration-200">
+                      <label htmlFor="email" className="text-sm font-medium flex items-center gap-2 group-hover:text-blue-600 transition-colors">
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-1.5 rounded-md group-hover:bg-blue-100 dark:group-hover:bg-blue-800/30 transition-colors">
                           <MailIcon className="h-4 w-4 text-blue-500" />
                         </div>
                         Email Address
@@ -736,7 +859,7 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
                           value={email} 
                           onChange={(e) => handleFieldChange('email', e.target.value)}
                           className={cn(
-                            "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-gray-300 focus-visible:border-blue-500 shadow-sm transition-colors",
+                            "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-blue-300 focus-visible:border-blue-500 shadow-sm transition-all duration-200",
                             !validation.email && "border-red-500 bg-red-50"
                           )}
                         />
@@ -752,9 +875,9 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
                       </div>
                     </div>
                     
-                    <div className="space-y-2">
-                      <label htmlFor="phone" className="text-sm font-medium flex items-center gap-2">
-                        <div className="bg-emerald-50 dark:bg-emerald-900/20 p-1.5 rounded-md">
+                    <div className="space-y-2 group focus-within:ring-2 focus-within:ring-emerald-200 focus-within:rounded-lg focus-within:p-2 focus-within:-m-2 transition-all duration-200">
+                      <label htmlFor="phone" className="text-sm font-medium flex items-center gap-2 group-hover:text-emerald-600 transition-colors">
+                        <div className="bg-emerald-50 dark:bg-emerald-900/20 p-1.5 rounded-md group-hover:bg-emerald-100 dark:group-hover:bg-emerald-800/30 transition-colors">
                           <SmartphoneIcon className="h-4 w-4 text-emerald-500" />
                         </div>
                         Phone Number
@@ -766,7 +889,7 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
                           value={phone} 
                           onChange={(e) => handleFieldChange('phone', e.target.value)}
                           className={cn(
-                            "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-gray-300 focus-visible:border-blue-500 shadow-sm transition-colors",
+                            "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-emerald-300 focus-visible:border-emerald-500 shadow-sm transition-all duration-200",
                             !validation.phone && "border-red-500 bg-red-50"
                           )}
                         />
@@ -783,10 +906,10 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
                     </div>
                   </div>
                   
-                  {/* Biography */}
-                  <div className="mb-8">
-                    <label htmlFor="bio" className="text-sm font-medium flex items-center gap-2 mb-2">
-                      <div className="bg-violet-50 dark:bg-violet-900/20 p-1.5 rounded-md">
+                  {/* Biography - Enhanced with focus styles */}
+                  <div className="mb-8 group focus-within:ring-2 focus-within:ring-violet-200 focus-within:rounded-lg focus-within:p-2 focus-within:-m-2 transition-all duration-200">
+                    <label htmlFor="bio" className="text-sm font-medium flex items-center gap-2 mb-2 group-hover:text-violet-600 transition-colors">
+                      <div className="bg-violet-50 dark:bg-violet-900/20 p-1.5 rounded-md group-hover:bg-violet-100 dark:group-hover:bg-violet-800/30 transition-colors">
                         <BookOpen className="h-4 w-4 text-violet-500" />
                       </div>
                       Biography
@@ -796,7 +919,7 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
                       value={bio}
                       onChange={(e) => handleFieldChange('bio', e.target.value)}
                       rows={4}
-                      className="resize-none bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-gray-300 focus-visible:border-blue-500 shadow-sm transition-colors"
+                      className="resize-none bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-violet-300 focus-visible:border-violet-500 shadow-sm transition-all duration-200"
                       placeholder="Tell us about yourself..."
                     />
                   </div>
@@ -816,7 +939,10 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
                     <Button 
                       type="submit" 
                       disabled={saving || !hasUnsavedChanges}
-                      className="min-w-[100px] bg-blue-600 hover:bg-blue-700 text-white"
+                      className={cn(
+                        "min-w-[100px]", 
+                        hasUnsavedChanges ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-gray-300 text-gray-600 cursor-not-allowed"
+                      )}
                     >
                       {saving ? (
                         <>
@@ -834,7 +960,10 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
             <TabsContent value="preferences" className="m-0 p-0">
               <div className="p-8 bg-white dark:bg-gray-950">
                 <div className="max-w-3xl mx-auto">
-                  <h3 className="text-xl font-semibold mb-6">Preferences</h3>
+                  <h3 className="text-xl font-semibold mb-6 flex items-center">
+                    <Settings className="h-5 w-5 mr-2 text-emerald-500" /> 
+                    Preferences
+                  </h3>
                   
                   {/* Appearance */}
                   <div className="mb-8">
@@ -844,7 +973,7 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
                       </div>
                       Appearance
                     </h4>
-                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 space-y-4">
+                    <div className={cardVariants({intent: "info"})}>
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-medium">Dark Mode</p>
@@ -857,9 +986,9 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
                         />
                       </div>
                       
-                      <div className="pt-2">
+                      <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
                         <p className="font-medium mb-2">Language</p>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                           {['english', 'spanish', 'french', 'german', 'japanese', 'chinese'].map((lang) => (
                             <Button 
                               key={lang}
@@ -867,7 +996,11 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
                               variant={language === lang ? "default" : "outline"}
                               size="sm"
                               onClick={() => setLanguage(lang)}
-                              className="capitalize"
+                              className={cn(
+                                "capitalize transition-all",
+                                language === lang ? "bg-indigo-600 hover:bg-indigo-700" : 
+                                "hover:border-indigo-300 hover:text-indigo-700"
+                              )}
                             >
                               {lang}
                             </Button>
@@ -885,53 +1018,55 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
                       </div>
                       Notifications
                     </h4>
-                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">Email Notifications</p>
-                          <p className="text-sm text-muted-foreground">Receive updates and alerts via email</p>
+                    <div className={cardVariants({intent: "danger"})}>
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">Email Notifications</p>
+                            <p className="text-sm text-muted-foreground">Receive updates and alerts via email</p>
+                          </div>
+                          <Switch 
+                            checked={emailNotifications} 
+                            onCheckedChange={setEmailNotifications}
+                            className={emailNotifications ? "bg-rose-600" : undefined}
+                          />
                         </div>
-                        <Switch 
-                          checked={emailNotifications} 
-                          onCheckedChange={setEmailNotifications}
-                          className={emailNotifications ? "bg-rose-600" : undefined}
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">Desktop Notifications</p>
-                          <p className="text-sm text-muted-foreground">Show notifications on your desktop</p>
+                        
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">Desktop Notifications</p>
+                            <p className="text-sm text-muted-foreground">Show notifications on your desktop</p>
+                          </div>
+                          <Switch 
+                            checked={desktopNotifications} 
+                            onCheckedChange={setDesktopNotifications}
+                            className={desktopNotifications ? "bg-rose-600" : undefined}
+                          />
                         </div>
-                        <Switch 
-                          checked={desktopNotifications} 
-                          onCheckedChange={setDesktopNotifications}
-                          className={desktopNotifications ? "bg-rose-600" : undefined}
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">Mentions</p>
-                          <p className="text-sm text-muted-foreground">Get notified when someone mentions you</p>
+                        
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">Mentions</p>
+                            <p className="text-sm text-muted-foreground">Get notified when someone mentions you</p>
+                          </div>
+                          <Switch 
+                            checked={mentionNotifications} 
+                            onCheckedChange={setMentionNotifications}
+                            className={mentionNotifications ? "bg-rose-600" : undefined}
+                          />
                         </div>
-                        <Switch 
-                          checked={mentionNotifications} 
-                          onCheckedChange={setMentionNotifications}
-                          className={mentionNotifications ? "bg-rose-600" : undefined}
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">Sound Alerts</p>
-                          <p className="text-sm text-muted-foreground">Play sounds for important notifications</p>
+                        
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">Sound Alerts</p>
+                            <p className="text-sm text-muted-foreground">Play sounds for important notifications</p>
+                          </div>
+                          <Switch 
+                            checked={soundAlerts} 
+                            onCheckedChange={setSoundAlerts}
+                            className={soundAlerts ? "bg-rose-600" : undefined}
+                          />
                         </div>
-                        <Switch 
-                          checked={soundAlerts} 
-                          onCheckedChange={setSoundAlerts}
-                          className={soundAlerts ? "bg-rose-600" : undefined}
-                        />
                       </div>
                     </div>
                   </div>
@@ -944,29 +1079,31 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
                       </div>
                       System
                     </h4>
-                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">Auto Update</p>
-                          <p className="text-sm text-muted-foreground">Keep the application up to date automatically</p>
+                    <div className={cardVariants({intent: "success"})}>
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">Auto Update</p>
+                            <p className="text-sm text-muted-foreground">Keep the application up to date automatically</p>
+                          </div>
+                          <Switch 
+                            checked={autoUpdateApp} 
+                            onCheckedChange={setAutoUpdateApp}
+                            className={autoUpdateApp ? "bg-emerald-600" : undefined}
+                          />
                         </div>
-                        <Switch 
-                          checked={autoUpdateApp} 
-                          onCheckedChange={setAutoUpdateApp}
-                          className={autoUpdateApp ? "bg-emerald-600" : undefined}
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">Security Alerts</p>
-                          <p className="text-sm text-muted-foreground">Get notified about security concerns</p>
+                        
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">Security Alerts</p>
+                            <p className="text-sm text-muted-foreground">Get notified about security concerns</p>
+                          </div>
+                          <Switch 
+                            checked={securityAlerts} 
+                            onCheckedChange={setSecurityAlerts}
+                            className={securityAlerts ? "bg-emerald-600" : undefined}
+                          />
                         </div>
-                        <Switch 
-                          checked={securityAlerts} 
-                          onCheckedChange={setSecurityAlerts}
-                          className={securityAlerts ? "bg-emerald-600" : undefined}
-                        />
                       </div>
                     </div>
                   </div>
@@ -985,7 +1122,7 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
                     
                     <Button 
                       type="submit"
-                      className="min-w-[100px] bg-blue-600 hover:bg-blue-700 text-white"
+                      className="min-w-[100px] bg-emerald-600 hover:bg-emerald-700 text-white"
                     >
                       Save Preferences
                     </Button>
@@ -998,7 +1135,10 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
             <TabsContent value="security" className="m-0 p-0">
               <div className="p-8 bg-white dark:bg-gray-950">
                 <div className="max-w-3xl mx-auto">
-                  <h3 className="text-xl font-semibold mb-6">Security</h3>
+                  <h3 className="text-xl font-semibold mb-6 flex items-center">
+                    <ShieldCheck className="h-5 w-5 mr-2 text-amber-500" />
+                    Security
+                  </h3>
                   
                   {/* Password Section */}
                   <div className="mb-8">
@@ -1008,7 +1148,7 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
                       </div>
                       Password Management
                     </h4>
-                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+                    <div className={cardVariants({intent: "primary"})}>
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div>
                           <p className="font-medium">Password</p>
@@ -1037,7 +1177,7 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
                       </div>
                       Two-Factor Authentication
                     </h4>
-                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+                    <div className={cardVariants({intent: "info"})}>
                       <p className="text-sm text-muted-foreground mb-4">
                         Add an extra layer of security to your account by requiring more than just a password to sign in.
                       </p>
@@ -1110,7 +1250,7 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
                       </div>
                       Active Sessions
                     </h4>
-                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+                    <div className={cardVariants({intent: "warning"})}>
                       <p className="text-sm text-muted-foreground mb-4">
                         These are the devices currently signed in to your account.
                       </p>
@@ -1160,7 +1300,7 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
                       </div>
                       Account Danger Zone
                     </h4>
-                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+                    <div className={cardVariants({intent: "danger"})}>
                       <p className="text-sm text-muted-foreground mb-4">
                         The following actions are irreversible. Please proceed with caution.
                       </p>
