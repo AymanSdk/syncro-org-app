@@ -36,7 +36,10 @@ import {
   Building,
   Sparkles,
   Globe,
-  Activity
+  Activity,
+  Settings,
+  LogOut,
+  DownloadIcon
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -337,10 +340,42 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
     }
   };
 
-  // Change password handler
+  // Change password handler with more detail
   const handleChangePassword = () => {
-    // For now, just show a toast
-    toast.info("Password change functionality would be implemented here");
+    toast.info("Password change modal would open here", {
+      description: "For security reasons, you would need to verify your current password"
+    });
+  };
+
+  // Handle MFA method change
+  const handleTwoFactorMethodChange = async (method: 'app' | 'sms' | 'none') => {
+    if (method === 'none') {
+      setMfaEnabled(false);
+    } else {
+      setMfaEnabled(true);
+    }
+    
+    setTwoFactorMethod(method);
+    
+    try {
+      if (onUpdateSecurity) {
+        await onUpdateSecurity({ 
+          mfaEnabled: method !== 'none', 
+          mfaMethod: method 
+        });
+        toast.success(`Two-factor authentication ${method === 'none' ? 'disabled' : 'updated'}`);
+      }
+    } catch (error) {
+      console.error('MFA update error:', error);
+      toast.error("Failed to update security settings");
+    }
+  };
+
+  // Handle device logout
+  const handleDeviceLogout = (deviceId: string) => {
+    toast.info(`Logging out from: ${deviceId}`, {
+      description: "This would end the session on the specified device"
+    });
   };
 
   // Handle MFA toggle
@@ -409,6 +444,19 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
       isCurrent: false
     }
   ];
+
+  // Additional state for preferences
+  const [darkMode, setDarkMode] = useState(false);
+  const [language, setLanguage] = useState('english');
+  const [desktopNotifications, setDesktopNotifications] = useState(true);
+  const [mentionNotifications, setMentionNotifications] = useState(true);
+  const [soundAlerts, setSoundAlerts] = useState(true);
+  const [autoUpdateApp, setAutoUpdateApp] = useState(true);
+  const [securityAlerts, setSecurityAlerts] = useState(true);
+  
+  // Additional state for security
+  const [passwordLastChanged, setPasswordLastChanged] = useState('3 months ago');
+  const [twoFactorMethod, setTwoFactorMethod] = useState<'app' | 'sms' | 'none'>('none');
 
   // Loading state
   if (isLoading) {
@@ -777,6 +825,366 @@ export function UserProfileContent({ user, statusColor, statusIcon: StatusIcon, 
                         </>
                       ) : "Save Changes"}
                     </Button>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+            
+            {/* Preferences Tab */}
+            <TabsContent value="preferences" className="m-0 p-0">
+              <div className="p-8 bg-white dark:bg-gray-950">
+                <div className="max-w-3xl mx-auto">
+                  <h3 className="text-xl font-semibold mb-6">Preferences</h3>
+                  
+                  {/* Appearance */}
+                  <div className="mb-8">
+                    <h4 className="text-base font-medium mb-3 flex items-center">
+                      <div className="bg-indigo-50 dark:bg-indigo-900/20 p-1.5 rounded-md mr-2">
+                        <Activity className="h-4 w-4 text-indigo-500" />
+                      </div>
+                      Appearance
+                    </h4>
+                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">Dark Mode</p>
+                          <p className="text-sm text-muted-foreground">Use dark theme throughout the application</p>
+                        </div>
+                        <Switch 
+                          checked={darkMode} 
+                          onCheckedChange={setDarkMode}
+                          className={darkMode ? "bg-indigo-600" : undefined}
+                        />
+                      </div>
+                      
+                      <div className="pt-2">
+                        <p className="font-medium mb-2">Language</p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {['english', 'spanish', 'french', 'german', 'japanese', 'chinese'].map((lang) => (
+                            <Button 
+                              key={lang}
+                              type="button"
+                              variant={language === lang ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setLanguage(lang)}
+                              className="capitalize"
+                            >
+                              {lang}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Notifications */}
+                  <div className="mb-8">
+                    <h4 className="text-base font-medium mb-3 flex items-center">
+                      <div className="bg-rose-50 dark:bg-rose-900/20 p-1.5 rounded-md mr-2">
+                        <BellOff className="h-4 w-4 text-rose-500" />
+                      </div>
+                      Notifications
+                    </h4>
+                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">Email Notifications</p>
+                          <p className="text-sm text-muted-foreground">Receive updates and alerts via email</p>
+                        </div>
+                        <Switch 
+                          checked={emailNotifications} 
+                          onCheckedChange={setEmailNotifications}
+                          className={emailNotifications ? "bg-rose-600" : undefined}
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">Desktop Notifications</p>
+                          <p className="text-sm text-muted-foreground">Show notifications on your desktop</p>
+                        </div>
+                        <Switch 
+                          checked={desktopNotifications} 
+                          onCheckedChange={setDesktopNotifications}
+                          className={desktopNotifications ? "bg-rose-600" : undefined}
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">Mentions</p>
+                          <p className="text-sm text-muted-foreground">Get notified when someone mentions you</p>
+                        </div>
+                        <Switch 
+                          checked={mentionNotifications} 
+                          onCheckedChange={setMentionNotifications}
+                          className={mentionNotifications ? "bg-rose-600" : undefined}
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">Sound Alerts</p>
+                          <p className="text-sm text-muted-foreground">Play sounds for important notifications</p>
+                        </div>
+                        <Switch 
+                          checked={soundAlerts} 
+                          onCheckedChange={setSoundAlerts}
+                          className={soundAlerts ? "bg-rose-600" : undefined}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* System */}
+                  <div className="mb-8">
+                    <h4 className="text-base font-medium mb-3 flex items-center">
+                      <div className="bg-emerald-50 dark:bg-emerald-900/20 p-1.5 rounded-md mr-2">
+                        <Settings className="h-4 w-4 text-emerald-500" />
+                      </div>
+                      System
+                    </h4>
+                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">Auto Update</p>
+                          <p className="text-sm text-muted-foreground">Keep the application up to date automatically</p>
+                        </div>
+                        <Switch 
+                          checked={autoUpdateApp} 
+                          onCheckedChange={setAutoUpdateApp}
+                          className={autoUpdateApp ? "bg-emerald-600" : undefined}
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">Security Alerts</p>
+                          <p className="text-sm text-muted-foreground">Get notified about security concerns</p>
+                        </div>
+                        <Switch 
+                          checked={securityAlerts} 
+                          onCheckedChange={setSecurityAlerts}
+                          className={securityAlerts ? "bg-emerald-600" : undefined}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Actions */}
+                  <div className="flex justify-end gap-3 mt-10">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={handleClose}
+                      disabled={saving}
+                      className="border-gray-300 hover:border-gray-400 transition-colors"
+                    >
+                      Cancel
+                    </Button>
+                    
+                    <Button 
+                      type="submit"
+                      className="min-w-[100px] bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      Save Preferences
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+            
+            {/* Security Tab */}
+            <TabsContent value="security" className="m-0 p-0">
+              <div className="p-8 bg-white dark:bg-gray-950">
+                <div className="max-w-3xl mx-auto">
+                  <h3 className="text-xl font-semibold mb-6">Security</h3>
+                  
+                  {/* Password Section */}
+                  <div className="mb-8">
+                    <h4 className="text-base font-medium mb-3 flex items-center">
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-1.5 rounded-md mr-2">
+                        <LockIcon className="h-4 w-4 text-blue-500" />
+                      </div>
+                      Password Management
+                    </h4>
+                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                          <p className="font-medium">Password</p>
+                          <p className="text-sm text-muted-foreground">Last updated {passwordLastChanged}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleChangePassword}
+                            className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300"
+                          >
+                            <KeyIcon className="h-4 w-4 mr-2" />
+                            Change Password
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Two Factor Authentication */}
+                  <div className="mb-8">
+                    <h4 className="text-base font-medium mb-3 flex items-center">
+                      <div className="bg-violet-50 dark:bg-violet-900/20 p-1.5 rounded-md mr-2">
+                        <ShieldCheck className="h-4 w-4 text-violet-500" />
+                      </div>
+                      Two-Factor Authentication
+                    </h4>
+                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Add an extra layer of security to your account by requiring more than just a password to sign in.
+                      </p>
+                      
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            id="twoFactor-none"
+                            name="twoFactorMethod"
+                            checked={twoFactorMethod === 'none'}
+                            onChange={() => handleTwoFactorMethodChange('none')}
+                            className="h-4 w-4 text-violet-600"
+                          />
+                          <div>
+                            <label htmlFor="twoFactor-none" className="font-medium">Don't use two-factor authentication</label>
+                            <p className="text-sm text-muted-foreground">Not recommended</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            id="twoFactor-app"
+                            name="twoFactorMethod"
+                            checked={twoFactorMethod === 'app'}
+                            onChange={() => handleTwoFactorMethodChange('app')}
+                            className="h-4 w-4 text-violet-600"
+                          />
+                          <div>
+                            <label htmlFor="twoFactor-app" className="font-medium">Use an authenticator app</label>
+                            <p className="text-sm text-muted-foreground">Google Authenticator, Microsoft Authenticator, etc.</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            id="twoFactor-sms"
+                            name="twoFactorMethod"
+                            checked={twoFactorMethod === 'sms'}
+                            onChange={() => handleTwoFactorMethodChange('sms')}
+                            className="h-4 w-4 text-violet-600"
+                          />
+                          <div>
+                            <label htmlFor="twoFactor-sms" className="font-medium">Use SMS verification</label>
+                            <p className="text-sm text-muted-foreground">Receive a code on your phone via SMS</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {twoFactorMethod !== 'none' && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="mt-4 text-violet-600 border-violet-200 hover:bg-violet-50 hover:border-violet-300"
+                        >
+                          <ShieldCheck className="h-4 w-4 mr-2" />
+                          Set up {twoFactorMethod === 'app' ? 'Authenticator App' : 'SMS Verification'}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Active Sessions */}
+                  <div className="mb-8">
+                    <h4 className="text-base font-medium mb-3 flex items-center">
+                      <div className="bg-amber-50 dark:bg-amber-900/20 p-1.5 rounded-md mr-2">
+                        <Activity className="h-4 w-4 text-amber-500" />
+                      </div>
+                      Active Sessions
+                    </h4>
+                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+                      <p className="text-sm text-muted-foreground mb-4">
+                        These are the devices currently signed in to your account.
+                      </p>
+                      
+                      <div className="space-y-3">
+                        {activeSessions.map((session, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-md border border-gray-100 dark:border-gray-700">
+                            <div>
+                              <p className="font-medium">{session.device}</p>
+                              <p className="text-xs text-muted-foreground">{session.lastActive}</p>
+                            </div>
+                            {session.isCurrent ? (
+                              <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
+                                Current Device
+                              </Badge>
+                            ) : (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeviceLogout(session.device)}
+                                className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                              >
+                                Sign out
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="mt-4 text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+                      >
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Sign out from all devices
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* Data & Privacy */}
+                  <div className="mb-8">
+                    <h4 className="text-base font-medium mb-3 flex items-center">
+                      <div className="bg-red-50 dark:bg-red-900/20 p-1.5 rounded-md mr-2">
+                        <AlertTriangle className="h-4 w-4 text-red-500" />
+                      </div>
+                      Account Danger Zone
+                    </h4>
+                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+                      <p className="text-sm text-muted-foreground mb-4">
+                        The following actions are irreversible. Please proceed with caution.
+                      </p>
+                      
+                      <div className="flex gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="text-orange-600 border-orange-200 hover:bg-orange-50 hover:border-orange-300"
+                        >
+                          <DownloadIcon className="h-4 w-4 mr-2" />
+                          Export My Data
+                        </Button>
+                        
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Account
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
