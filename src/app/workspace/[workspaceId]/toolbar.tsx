@@ -1,4 +1,5 @@
 import { ModeToggle } from '@/components/ModeToggle';
+import { NotificationDropdown } from '@/components/notification-dropdown';
 import { Button } from '@/components/ui/button';
 import {
   CommandDialog,
@@ -40,13 +41,13 @@ export const Toolbar = () => {
   };
 
   return (
-    <nav className="flex h-10 items-center justify-between bg-[#213555] p-1.5">
+    <nav className="flex h-12 items-center justify-between bg-[#213555] p-2.5">
       <div className="flex-1" />
       <div className="min-w-[280px] max-w-[642px] shrink grow-[2]">
         <Button
           onClick={() => setOpen(true)}
           size="sm"
-          className="h-7 w-full justify-start bg-accent/25 px-2 hover:bg-accent/25"
+          className="h-8 w-full justify-start bg-accent/25 px-2 hover:bg-accent/25"
         >
           <Search className="mr-2 size-4 text-white" />
           <span className="text-xs text-white">Search {data?.name}</span>
@@ -79,7 +80,8 @@ export const Toolbar = () => {
           </CommandList>
         </CommandDialog>
       </div>
-      <div className="ml-auto flex flex-1 items-center justify-end">
+      <div className="ml-auto flex flex-1 items-center justify-end gap-2">
+        <NotificationDropdown />
         <ModeToggle />
       </div>
     </nav>
